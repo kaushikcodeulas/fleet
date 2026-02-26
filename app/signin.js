@@ -72,7 +72,8 @@ export default function index() {
                             })
                         }else{
                             setItem('userData', JSON.stringify(res?.userData)).then((res) => {
-                                router.replace('/screens/validatepassword');
+                                router.replace('(tabs)')
+                                // router.replace('/screens/validatepassword');
                             })
                         }
                     } else {

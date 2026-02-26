@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "fleet",
-     "scheme": "fleet",
+    "scheme": "fleet",
     "slug": "fleet",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -21,7 +21,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.naracoo.fleet"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -29,6 +30,12 @@
     },
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "04e208fe-8acc-4255-8de6-5b4cbce845b6"
+      }
+    }
   }
 }

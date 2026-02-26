@@ -1,15 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, Button, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoadingComp from '../../../component/common/LoadingComp';
+import { useIsFocused } from '@react-navigation/native';
 
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
   const [driverData, setDriverData] = useState(null);
   const [driverDetails, setDriverDetails] = useState(null);
+  const focus = useIsFocused();
 
   async function getItem(key) {
     try {
@@ -25,20 +27,22 @@ export default function ProfileScreen() {
       setLoading(false);
       if (data) {
         setDriverData(data);
-        if(driverData?.token){
-          getDriverDetails().then((data)=>{
-            // console.log(data)
-            if(data?.status){
+        if (driverData?.token) {
+          getDriverDetails().then((data) => {
+            console.log(data)
+            setDataLoading(false)
+            if (data?.status) {
               setDriverDetails(data?.details);
-              setDataLoading(false)
             }
           })
         }
       } else {
         router.replace('signin')
       }
+    }).catch((err)=>{
+      console.log(err)
     })
-  }, [])
+  }, [focus])
 
   async function getDriverDetails() {
     const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}api/driver_details/profile`, {
@@ -55,6 +59,22 @@ export default function ProfileScreen() {
     router.replace('signin')
   }
 
+  const ProfileItem = ({ icon = '', label, value, loading = false }) => {
+    return (<View style={styles.profileItem}>
+      <FontAwesome5 name={icon} size={18} color="#7f8c8d" />
+      <View style={{ marginLeft: 12 }}>
+        {loading ?
+          <ActivityIndicator size={"small"} />
+          :
+          <>
+            <Text style={styles.profileLabel}>{label}</Text>
+            <Text style={styles.profileValue}>{value}</Text>
+          </>}
+      </View>
+    </View>
+    )
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {loading ?
@@ -67,7 +87,7 @@ export default function ProfileScreen() {
           {/* Header / Profile Banner */}
           <View style={styles.header}>
             <Image
-              source={driverData?.picture ? { uri: process.env.EXPO_PUBLIC_API_URL+driverData?.picture } : require("../../../assets/user.png")}
+              source={driverData?.picture ? { uri: process.env.EXPO_PUBLIC_API_URL + driverData?.picture } : require("../../../assets/user.png")}
               style={styles.avatar}
             />
             <Text style={styles.name}>{driverData.first_name} {driverData.last_name}</Text>
@@ -94,15 +114,15 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <ProfileItem icon="id-card" label="Driver ID" value={driverData?.driver_id} />
             <ProfileItem icon="mail-bulk" label="Email" value={driverData?.email} />
-            <ProfileItem icon="phone" label="Phone" value={driverDetails?.phone || 'N/A'} loading={dataLoading} />
+            {dataLoading? <ProfileItem icon="phone" label="Phone" value={driverDetails?.phone || 'N/A'} loading={true} /> : <ProfileItem icon="phone" label="Phone" value={driverDetails?.phone || 'N/A'} loading={dataLoading} />}
             <ProfileItem icon="map-marker-alt" label="Location" value={driverDetails?.address || 'N/A'} loading={dataLoading} />
-            <ProfileItem icon="truck-moving" label="Assigned Vehicle" value={driverDetails?.make ? driverDetails?.make+'-'+driverDetails?.license_plate : 'N/A'} loading={dataLoading} />
+            <ProfileItem icon="truck-moving" label="Assigned Vehicle" value={driverDetails?.make ? driverDetails?.make + '-' + driverDetails?.license_plate : 'N/A'} loading={dataLoading} />
             <ProfileItem icon="calendar-alt" label="Joined On" value={driverDetails?.date || 'N/A'} loading={dataLoading} />
           </View>
 
           {/* Action Buttons */}
           <View style={styles.actions}>
-            <ActionButton icon="settings" label="Settings" />
+            <ActionButton icon="cog" label="Settings" />
             <ActionButton icon="shield-alt" label="Safety" />
             <TouchableOpacity onPress={logoutProfile}>
               <ActionButton icon="sign-out-alt" label="Logout" danger />
@@ -124,20 +144,6 @@ const StatCard = ({ icon, label, value }) => (
   </View>
 );
 
-const ProfileItem = ({ icon, label, value, loading = false }) => (
-  <View style={styles.profileItem}>
-    <FontAwesome5 name={icon} size={18} color="#7f8c8d" />
-    <View style={{ marginLeft: 12 }}>
-      {loading?
-      <ActivityIndicator size={"small"} />
-      :
-      <>
-        <Text style={styles.profileLabel}>{label}</Text>
-        <Text style={styles.profileValue}>{value}</Text>
-      </>}
-    </View>
-  </View>
-);
 
 const ActionButton = ({ icon, label, danger }) => (
   <View style={[styles.actionButton, danger && styles.dangerButton]}>
@@ -156,6 +162,8 @@ const ActionButton = ({ icon, label, danger }) => (
     </Text>
   </View>
 );
+
+
 
 /* Styles */
 

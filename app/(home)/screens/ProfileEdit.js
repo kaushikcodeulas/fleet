@@ -12,10 +12,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { homeValue } from '../../../redux/homeSlice';
+import { useSelector } from 'react-redux';
 
 export default function ProfileEdit() {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(30)).current;
+    const driverDetails = useSelector(homeValue);
 
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');

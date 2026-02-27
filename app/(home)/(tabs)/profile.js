@@ -1,99 +1,35 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, Button, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import LoadingComp from '../../../component/common/LoadingComp';
-import { useIsFocused } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
+import { homeValue } from '../../../redux/homeSlice';
+import { useCommonContext } from '../../../context/CommonContext';
 
 export default function ProfileScreen() {
-  const [loading, setLoading] = useState(true);
-  const [dataLoading, setDataLoading] = useState(true);
-  const [driverData, setDriverData] = useState(null);
-  const [driverDetails, setDriverDetails] = useState(null);
-  const focus = useIsFocused();
-
-  async function getItem(key) {
-    try {
-      const response = await AsyncStorage.getItem(key);
-      return JSON.parse(response);
-    } catch (error) {
-      return undefined;
-    }
-  }
-
-  useEffect(() => {
-    getItem('userData').then((data) => {
-      setLoading(false);
-      if (data) {
-        setDriverData(data);
-        if (driverData?.token) {
-          getDriverDetails().then((data) => {
-            console.log(data)
-            setDataLoading(false)
-            if (data?.status) {
-              setDriverDetails(data?.details);
-            }
-          })
-        }
-      } else {
-        router.replace('signin')
-      }
-    }).catch((err)=>{
-      console.log(err)
-    })
-  }, [focus])
-
-  async function getDriverDetails() {
-    const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}api/driver_details/profile`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${driverData?.token}`,
-      }
-    })
-    return response.json()
-  }
-
+  const driverDetails = useSelector(homeValue)?.details;
+  const {dateFormat} = useCommonContext();
+  
   function logoutProfile() {
     AsyncStorage.removeItem('userData')
     router.replace('signin')
   }
 
-  const ProfileItem = ({ icon = '', label, value, loading = false }) => {
-    return (<View style={styles.profileItem}>
-      <FontAwesome5 name={icon} size={18} color="#7f8c8d" />
-      <View style={{ marginLeft: 12 }}>
-        {loading ?
-          <ActivityIndicator size={"small"} />
-          :
-          <>
-            <Text style={styles.profileLabel}>{label}</Text>
-            <Text style={styles.profileValue}>{value}</Text>
-          </>}
-      </View>
-    </View>
-    )
-  };
-
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {loading ?
-        <LoadingComp />
-        :
-        <>
-          <TouchableOpacity onPress={() => { router.push('/screens/ProfileEdit') }} style={{ position: "absolute", right: 20, top: 30, zIndex: 55, borderColor: "#efefef", borderWidth: 0, borderRadius: 50, paddingHorizontal: 10, paddingVertical: 13 }}>
-            <FontAwesome5 name="user-edit" size={24} color="#fff" />
-          </TouchableOpacity>
-          {/* Header / Profile Banner */}
-          <View style={styles.header}>
-            <Image
-              source={driverData?.picture ? { uri: process.env.EXPO_PUBLIC_API_URL + driverData?.picture } : require("../../../assets/user.png")}
-              style={styles.avatar}
-            />
-            <Text style={styles.name}>{driverData.first_name} {driverData.last_name}</Text>
-            <Text style={styles.role}>Fleet Driver</Text>
+      <TouchableOpacity onPress={() => { router.push('/screens/ProfileEdit') }} style={{ position: "absolute", right: 20, top: 30, zIndex: 55, borderColor: "#efefef", borderWidth: 0, borderRadius: 50, paddingHorizontal: 10, paddingVertical: 13 }}>
+        <FontAwesome5 name="user-edit" size={24} color="#fff" />
+      </TouchableOpacity>
+      {/* Header / Profile Banner */}
+      <View style={styles.header}>
+        <Image
+          source={driverDetails?.picture ? { uri: process.env.EXPO_PUBLIC_API_URL + driverDetails?.picture } : require("../../../assets/user.png")}
+          style={styles.avatar}
+        />
+        <Text style={styles.name}>{driverDetails.first_name} {driverDetails.last_name}</Text>
+        <Text style={styles.role}>Fleet Driver</Text>
 
-            {/* <View style={styles.ratingRow}>
+        {/* <View style={styles.ratingRow}>
             <Ionicons name="star" size={16} color="#f1c40f" />
             <Ionicons name="star" size={16} color="#f1c40f" />
             <Ionicons name="star" size={16} color="#f1c40f" />
@@ -101,35 +37,33 @@ export default function ProfileScreen() {
             <Ionicons name="star-outline" size={16} color="#f1c40f" />
             <Text style={styles.ratingText}>4.0</Text>
           </View> */}
-          </View>
+      </View>
 
-          {/* Stats Cards */}
-          <View style={styles.statsRow}>
-            <StatCard icon="road" label="Total KM" value="12,450" />
-            <StatCard icon="truck" label="Trips" value="1,240" />
-            <StatCard icon="clock" label="Hours" value="3,560" />
-          </View>
+      {/* Stats Cards */}
+      <View style={styles.statsRow}>
+        <StatCard icon="road" label="Total KM" value="12,450" />
+        <StatCard icon="truck" label="Trips" value="1,240" />
+        <StatCard icon="clock" label="Hours" value="3,560" />
+      </View>
 
-          {/* Profile Details */}
-          <View style={styles.section}>
-            <ProfileItem icon="id-card" label="Driver ID" value={driverData?.driver_id} />
-            <ProfileItem icon="mail-bulk" label="Email" value={driverData?.email} />
-            {dataLoading? <ProfileItem icon="phone" label="Phone" value={driverDetails?.phone || 'N/A'} loading={true} /> : <ProfileItem icon="phone" label="Phone" value={driverDetails?.phone || 'N/A'} loading={dataLoading} />}
-            <ProfileItem icon="map-marker-alt" label="Location" value={driverDetails?.address || 'N/A'} loading={dataLoading} />
-            <ProfileItem icon="truck-moving" label="Assigned Vehicle" value={driverDetails?.make ? driverDetails?.make + '-' + driverDetails?.license_plate : 'N/A'} loading={dataLoading} />
-            <ProfileItem icon="calendar-alt" label="Joined On" value={driverDetails?.date || 'N/A'} loading={dataLoading} />
-          </View>
+      {/* Profile Details */}
+      <View style={styles.section}>
+        <ProfileItem icon="id-card" label="Driver ID" value={driverDetails?.driver_id} />
+        <ProfileItem icon="mail-bulk" label="Email" value={driverDetails?.email} />
+        <ProfileItem icon="phone" label="Phone" value={driverDetails?.phone || 'N/A'} />
+        <ProfileItem icon="map-marker-alt" label="Location" value={driverDetails?.address || 'N/A'} />
+        <ProfileItem icon="truck-moving" label="Assigned Vehicle" value={driverDetails?.make ? driverDetails?.make + '-' + driverDetails?.license_plate : 'N/A'} />
+        <ProfileItem icon="calendar-alt" label="Joined On" value={driverDetails?.date ? dateFormat(driverDetails?.date) : 'N/A'} />
+      </View>
 
-          {/* Action Buttons */}
-          <View style={styles.actions}>
-            <ActionButton icon="cog" label="Settings" />
-            <ActionButton icon="shield-alt" label="Safety" />
-            <TouchableOpacity onPress={logoutProfile}>
-              <ActionButton icon="sign-out-alt" label="Logout" danger />
-            </TouchableOpacity>
-          </View>
-        </>}
-
+      {/* Action Buttons */}
+      <View style={styles.actions}>
+        <ActionButton icon="cog" label="Settings" />
+        <ActionButton icon="shield-alt" label="Safety" />
+        <TouchableOpacity onPress={logoutProfile}>
+          <ActionButton icon="sign-out-alt" label="Logout" danger />
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -163,7 +97,16 @@ const ActionButton = ({ icon, label, danger }) => (
   </View>
 );
 
-
+const ProfileItem = ({ icon = '', label, value, }) => {
+  return (<View style={styles.profileItem}>
+    <FontAwesome5 name={icon} size={18} color="#7f8c8d" />
+    <View style={{ marginLeft: 12 }}>
+      <Text style={styles.profileLabel}>{label}</Text>
+      <Text style={styles.profileValue}>{value}</Text>
+    </View>
+  </View>
+  )
+};
 
 /* Styles */
 

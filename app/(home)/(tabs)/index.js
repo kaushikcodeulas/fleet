@@ -2,8 +2,11 @@ import React from 'react'
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import { homeValue } from '../../../redux/homeSlice';
+import { useSelector } from 'react-redux';
 
 const index = () => {
+    const driverDetails = useSelector(homeValue);
     return (
 
          <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

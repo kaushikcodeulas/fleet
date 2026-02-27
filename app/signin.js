@@ -7,6 +7,8 @@ import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import LoadingComp from '../component/common/LoadingComp';
+import { setDriverDetails } from '../redux/homeSlice';
+import { useDispatch } from 'react-redux';
 
 export default function index() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -17,7 +19,8 @@ export default function index() {
     })
     const [loading, setLoading] = useState(false);
     const [pageLoading, setpageLoading] = useState(true);
-    const [visible, setVisible] = useState(false)
+    const [visible, setVisible] = useState(false);
+    const dispatch = useDispatch();
 
     async function handleSignin() {
         const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}api/driver_account`, {
@@ -66,6 +69,7 @@ export default function index() {
                 handleSignin().then((res) => {
                     setLoading(false)
                     if (res.status) {
+                        dispatch(setDriverDetails({details: res?.userData}));
                         if(res.type == "old"){
                             setItem('userData', JSON.stringify(res?.userData)).then((res) => {
                                 router.replace('(tabs)')

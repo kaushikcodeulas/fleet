@@ -1,8 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { homeValue } from '../../../redux/homeSlice';
+import { useSelector } from 'react-redux';
 
 const fleet = () => {
+  const driverDetails = useSelector(homeValue)?.details;
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
@@ -14,8 +17,8 @@ const fleet = () => {
         <View style={styles.vehicleTop}>
           <MaterialCommunityIcons name="truck-fast" size={42} color="#fff" />
           <View>
-            <Text style={styles.vehicleName}>Tata Ace – WB 24 A 5678</Text>
-            <Text style={styles.vehicleType}>Mini Truck • Diesel</Text>
+            <Text style={styles.vehicleName}>{driverDetails?.make} – {driverDetails?.license_plate}</Text>
+            <Text style={styles.vehicleType}>{driverDetails?.vehicle_type} • {driverDetails?.fuel_type}</Text>
           </View>
         </View>
 
@@ -92,7 +95,7 @@ const fleet = () => {
       </View>
 
       {/* Actions */}
-      <View style={styles.actionRow}>
+      {/* <View style={styles.actionRow}>
         <View style={styles.actionBtn}>
           <Ionicons name="location" size={20} color="#fff" />
           <Text style={styles.actionText}>Live Track</Text>
@@ -102,7 +105,7 @@ const fleet = () => {
           <Ionicons name="call" size={20} color="#fff" />
           <Text style={styles.actionText}>Call Driver</Text>
         </View>
-      </View>
+      </View> */}
 
     </ScrollView>
   )

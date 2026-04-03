@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import LoadingComp from '../component/common/LoadingComp';
-import { setDriverDetails } from '../redux/homeSlice';
+import { setDriverDetails, setUserData } from '../redux/homeSlice';
 import { useDispatch } from 'react-redux';
 
 export default function index() {
@@ -23,7 +23,7 @@ export default function index() {
     const dispatch = useDispatch();
 
     async function handleSignin() {
-        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}api/driver_account`, {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/driver_account`, {
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -68,15 +68,17 @@ export default function index() {
             try {
                 handleSignin().then((res) => {
                     setLoading(false)
+                    console.log(res.userData)
                     if (res.status) {
                         dispatch(setDriverDetails({details: res?.userData}));
+                        dispatch(setUserData({details: res?.userData}));
                         if(res.type == "old"){
                             setItem('userData', JSON.stringify(res?.userData)).then((res) => {
-                                router.replace('(tabs)')
+                                router.replace('home')
                             })
                         }else{
                             setItem('userData', JSON.stringify(res?.userData)).then((res) => {
-                                router.replace('(tabs)')
+                                router.replace('home')
                                 // router.replace('/screens/validatepassword');
                             })
                         }
@@ -86,12 +88,12 @@ export default function index() {
                     }
                 }).catch((err) => {
                     setLoading(false)
-                    Alert.alert('Login', 'Something went wrong!')
+                    Alert.alert('Login', err.message)
                 })
 
             } catch (error) {
                 setLoading(false)
-                Alert.alert('Error', error)
+                Alert.alert('Error', error.message)
             }
         }
     }
@@ -99,7 +101,7 @@ export default function index() {
     useEffect(() => {
         getItem('userData').then((details) => {
             if (details) {
-                router.replace('(tabs)')
+                router.replace('home')
             } else {
                 setpageLoading(false)
             }

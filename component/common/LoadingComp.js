@@ -20,7 +20,7 @@ const LoadingComp = () => {
                   style={{
                       width: 500,
                       height: 300,
-                      backgroundColor: '#eee',
+                      backgroundColor: '#fff',
                   }}
                   // Find more Lottie files at https://lottiefiles.com/featured
                   source={require('../../assets/lottiefiles/Loading_animation_blue.json')}
@@ -30,7 +30,7 @@ const LoadingComp = () => {
 }
 const styles = StyleSheet.create({
     animationContainer: {
-        backgroundColor: '#efefef',
+        backgroundColor: '#fff',
         alignItems: 'center',
         justifyContent: 'center',
         flex: 1,

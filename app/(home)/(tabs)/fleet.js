@@ -1,112 +1,158 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { homeValue } from '../../../redux/homeSlice';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { getFleetDetails } from '../../../redux/homeThunks';
+import { useIsFocused } from '@react-navigation/native';
+import LoadingComp from '../../../component/common/LoadingComp';
+
+const screenHeight = Dimensions.get("screen").height
+const screenWidth = Dimensions.get("screen").width
 
 const fleet = () => {
-  const driverDetails = useSelector(homeValue)?.details;
+  const userData = useSelector(homeValue)?.userData;
+  const fleetDetails = useSelector(homeValue)?.fleetDetails?.data;
+  const fleetDetailsLoading = useSelector(homeValue)?.fleetDetails?.loading;
+  const focus = useIsFocused();
+  const dispatch = useDispatch();
+
+
+  useEffect(() => {
+    if (!fleetDetails) {
+      dispatch(getFleetDetails(userData?.token))
+    }
+    // console.log(fleetDetails)
+  }, [focus])
+
+ 
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <Text style={styles.header}>My Fleet</Text>
-      <Text style={styles.subHeader}>Vehicle assigned to you</Text>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}  contentContainerStyle={{ paddingBottom: 50 }}>
+      {fleetDetailsLoading ?
+        <View style={{height: screenHeight/1.2, justifyContent: "center", alignContent: "center"}}>
+          <LoadingComp />
+        </View>
+        :
+        <>
+          {/* Header */}
+          <Text style={styles.header}>My Fleet</Text>
+          <Text style={styles.subHeader}>Vehicle assigned to you</Text>
 
-      {/* Vehicle Card */}
-      <View style={styles.vehicleCard}>
-        <View style={styles.vehicleTop}>
-          <MaterialCommunityIcons name="truck-fast" size={42} color="#fff" />
-          <View>
-            <Text style={styles.vehicleName}>{driverDetails?.make} – {driverDetails?.license_plate}</Text>
-            <Text style={styles.vehicleType}>{driverDetails?.vehicle_type} • {driverDetails?.fuel_type}</Text>
+          {/* Vehicle Card */}
+          <View style={styles.vehicleCard}>
+            <View style={styles.vehicleTop}>
+              <MaterialCommunityIcons name="truck-fast" size={42} color="#fff" />
+              <View>
+                <Text style={styles.vehicleName}>{fleetDetails?.make} – {fleetDetails?.license_plate}</Text>
+                <Text style={styles.vehicleType}>{fleetDetails?.vehicle_type} • {fleetDetails?.fuel_type}</Text>
+              </View>
+            </View>
+
+            <View style={styles.statusRow}>
+              <View style={styles.statusBadge}>
+                <Ionicons name="radio-button-on" size={12} color="#2ecc71" />
+                <Text style={styles.statusText}> Active</Text>
+              </View>
+            </View>
           </View>
-        </View>
 
-        <View style={styles.statusRow}>
-          <View style={styles.statusBadge}>
-            <Ionicons name="radio-button-on" size={12} color="#2ecc71" />
-            <Text style={styles.statusText}> Active</Text>
+          {/* Stats */}
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Ionicons name="speedometer-outline" size={26} color="#16a34a" />
+              <Text style={styles.statValue}>{fleetDetails?.current_mileage} km/l</Text>
+              <Text style={styles.statLabel}>Mileage</Text>
+            </View>
+
+            <View style={styles.statBox}>
+              <Ionicons name="navigate" size={26} color="#2563eb" />
+              <Text style={styles.statValue}>{fleetDetails?.totalKm ?? '0'} km</Text>
+              <Text style={styles.statLabel}>Total Trip</Text>
+            </View>
+
+            <View style={styles.statBox}>
+              <MaterialIcons name="schedule" size={26} color="#f59e0b" />
+              <Text style={styles.statValue}>{fleetDetails?.totalHour ?? '00'}h {fleetDetails?.totalMin ?? '00'}m</Text>
+              <Text style={styles.statLabel}>Running</Text>
+            </View>
           </View>
-          <Text style={styles.lastUpdated}>Updated: 2 mins ago</Text>
-        </View>
-      </View>
 
-      {/* Stats */}
-      <View style={styles.statsRow}>
-        <View style={styles.statBox}>
-          <MaterialIcons name="speed" size={26} color="#16a34a" />
-          <Text style={styles.statValue}>62 km/h</Text>
-          <Text style={styles.statLabel}>Speed</Text>
-        </View>
+          {/* Fuel Graphic */}
+          {/* <View style={styles.graphCard}>
+            <Text style={styles.cardTitle}>Fuel Level</Text>
 
-        <View style={styles.statBox}>
-          <Ionicons name="navigate" size={26} color="#2563eb" />
-          <Text style={styles.statValue}>245 km</Text>
-          <Text style={styles.statLabel}>Today</Text>
-        </View>
+            <View style={styles.fuelRow}>
+              <Ionicons name="battery-half" size={26} color="#16a34a" />
+              <View style={styles.fuelBar}>
+                <View style={styles.fuelFill} />
+              </View>
+              <Text style={styles.percent}>65%</Text>
+            </View>
+          </View> */}
 
-        <View style={styles.statBox}>
-          <MaterialIcons name="schedule" size={26} color="#f59e0b" />
-          <Text style={styles.statValue}>5h 20m</Text>
-          <Text style={styles.statLabel}>Running</Text>
-        </View>
-      </View>
-
-      {/* Fuel Graphic */}
-      <View style={styles.graphCard}>
-        <Text style={styles.cardTitle}>Fuel Level</Text>
-
-        <View style={styles.fuelRow}>
-          <Ionicons name="battery-half" size={26} color="#16a34a" />
-          <View style={styles.fuelBar}>
-            <View style={styles.fuelFill} />
+          <View style={{flexDirection: "row", gap: 5}}>
+            <View style={[styles.tripCard, {width: "49%"}]}>
+              <Text style={styles.tripTitle}>Road Tax Validity</Text>
+              <View style={styles.tripRow}>
+                <FontAwesome5 name="calendar-alt" size={14} color="#e67e22" />
+                <Text style={styles.tripText}>{fleetDetails?.road_tax_date ?? 'N/A'}</Text>
+              </View>
+            </View> 
+            <View style={[styles.tripCard, {width: "49%"}]}>
+              <Text style={styles.tripTitle}>Insurance Validity</Text>
+              <View style={styles.tripRow}>
+                <FontAwesome5 name="calendar-alt" size={14} color="#e67e22" />
+                <Text style={styles.tripText}>{fleetDetails?.insurance_date ?? 'N/A'}</Text>
+              </View>
+            </View>
           </View>
-          <Text style={styles.percent}>65%</Text>
-        </View>
-      </View>
+          {/* Trip Summary */}
+          <View style={styles.tripCard}>
+            <Text style={styles.tripTitle}>Fleet Information</Text>
 
-    
-      {/* Trip Summary */}
-      <View style={styles.tripCard}>
-        <Text style={styles.tripTitle}>Today’s Trip Summary</Text>
+            <View style={styles.tripRow}>
+              <FontAwesome5 name="truck" size={14} color="#e67e22" />
+              <Text style={styles.tripText}>Vehicle ID: {fleetDetails?.vin ?? 'N/A'}</Text>
+            </View>
 
-        <View style={styles.tripRow}>
-          <FontAwesome5 name="play" size={14} color="#3498db" />
-          <Text style={styles.tripText}>Trips Completed: 5</Text>
-        </View>
+            <View style={styles.tripRow}>
+              <MaterialCommunityIcons name="engine" size={14} color="#e67e22"  />
+              <Text style={styles.tripText}>Engine Number: {fleetDetails?.engine_number ?? 'N/A'}</Text>
+            </View>
 
-        <View style={styles.tripRow}>
-          <FontAwesome5 name="map-marker-alt" size={14} color="#e67e22" />
-          <Text style={styles.tripText}>Current Location: Kolkata</Text>
-        </View>
+            <View style={styles.tripRow}>
+              <FontAwesome5 name="gas-pump" size={14} color="#e74c3c" />
+              <Text style={styles.tripText}>Current Mileage: {fleetDetails?.current_mileage ?? 0}/km</Text>
+            </View>
 
-        <View style={styles.tripRow}>
-          <FontAwesome5 name="exclamation-triangle" size={14} color="#e74c3c" />
-          <Text style={styles.tripText}>Alerts: None</Text>
-        </View>
-      </View>
-      
-      {/* Alerts */}
-      <View style={styles.alertCard}>
-        <Ionicons name="warning" size={22} color="#dc2626" />
-        <Text style={styles.alertText}>
-          Maintenance due in next 500 km
-        </Text>
-      </View>
+            <View style={styles.tripRow}>
+              <MaterialIcons name="precision-manufacturing" size={14} color="#e74c3c"  />
+              <Text style={styles.tripText}>Manufacture: {fleetDetails?.year_date ?? 'N/A'}</Text>
+            </View>
+          </View>
 
-      {/* Actions */}
-      {/* <View style={styles.actionRow}>
-        <View style={styles.actionBtn}>
-          <Ionicons name="location" size={20} color="#fff" />
-          <Text style={styles.actionText}>Live Track</Text>
-        </View>
+          {/* Alerts */}
+          {/* <View style={styles.alertCard}>
+            <Ionicons name="warning" size={22} color="#dc2626" />
+            <Text style={styles.alertText}>
+              Maintenance due in next 500 km
+            </Text>
+          </View> */}
 
-        <View style={[styles.actionBtn, { backgroundColor: '#16a34a' }]}>
-          <Ionicons name="call" size={20} color="#fff" />
-          <Text style={styles.actionText}>Call Driver</Text>
-        </View>
-      </View> */}
+          {/* Actions */}
+          {/* <View style={styles.actionRow}>
+          <View style={styles.actionBtn}>
+            <Ionicons name="location" size={20} color="#fff" />
+            <Text style={styles.actionText}>Live Track</Text>
+          </View>
 
+          <View style={[styles.actionBtn, { backgroundColor: '#16a34a' }]}>
+            <Ionicons name="call" size={20} color="#fff" />
+            <Text style={styles.actionText}>Call Driver</Text>
+          </View>
+        </View> */}
+        </>}
     </ScrollView>
   )
 }
@@ -122,8 +168,7 @@ const InfoCard = ({ icon, label, value }) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f6f8',
-    padding: 16,
+    padding: 16
   },
   header: {
     fontSize: 26,
@@ -205,6 +250,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginTop: 10,
+    width: "auto"
   },
   tripTitle: {
     fontSize: 16,

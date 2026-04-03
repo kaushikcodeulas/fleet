@@ -5,7 +5,7 @@ import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { homeValue } from '../../../redux/homeSlice';
 import { useSelector } from 'react-redux';
 
-const index = () => {
+const home = () => {
     const driverDetails = useSelector(homeValue);
     return (
 
@@ -14,7 +14,7 @@ const index = () => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Fleet Dashboard</Text>
-        <Ionicons name="notifications-outline" size={24} color="#111827" />
+        {/* <Ionicons name="notifications-outline" size={24} color="#111827" /> */}
       </View>
 
       {/* KPI Cards */}
@@ -88,7 +88,7 @@ const index = () => {
         </Text>
       </View>
 
-      <View style={styles.alertCard}>
+      <View style={[styles.alertCard, styles.lastCard]}>
         <MaterialIcons name="build" size={22} color="#f59e0b" />
         <Text style={styles.alertText}>
           5 vehicles due for maintenance
@@ -212,5 +212,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'right',
   },
+  lastCard: {
+    marginBottom: 50
+  }
 });
-export default index
+export default home

@@ -6,22 +6,25 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "resizeMode": "contain"
     },
     "ios": {
+      "config": {
+        "googleMapsApiKey": "AIzaSyBGIm2P5Vav9zkOABLCe5QIEjkhyoFpD7g"
+      },
       "supportsTablet": true
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
       "edgeToEdgeEnabled": true,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBGIm2P5Vav9zkOABLCe5QIEjkhyoFpD7g"
+        }
+      },
       "package": "com.naracoo.fleet"
     },
     "web": {
@@ -29,7 +32,25 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "react-native-maps",
+        {
+          "androidGoogleMapsApiKey": "AIzaSyBGIm2P5Vav9zkOABLCe5QIEjkhyoFpD7g",
+          "iosGoogleMapsApiKey": "AIzaSyBGIm2P5Vav9zkOABLCe5QIEjkhyoFpD7g"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": { 
+            "enableCoreLibraryDesugaring": true,
+            "kotlinVersion": "2.1.21"
+          },
+          "ios": { "deploymentTarget": "16.0" }
+        }
+      ],
+      "./plugins/withDesugaring"
     ],
     "extra": {
       "router": {},

@@ -1,17 +1,15 @@
 import { useRef, useEffect } from 'react';
-import { Button, StyleSheet, View } from 'react-native';
+import { Button, StyleSheet, View, Text } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { useRouter } from 'expo-router';
 
 
-const LoadingView = () => {
-    const animation = useRef(null);
-    useEffect(() => {
-        // You can control the ref programmatically, rather than using autoPlay
-        animation.current?.play();
-    }, []);
-
-
+const LottieFileView = ({file}) => {
+     const animation = useRef(null);
+        useEffect(() => {
+            // You can control the ref programmatically, rather than using autoPlay
+            animation.current?.play();
+        }, []);
     return (
         <View style={styles.animationContainer}>
             <LottieView
@@ -23,8 +21,9 @@ const LoadingView = () => {
                     backgroundColor: '#fff',
                 }}
                 // Find more Lottie files at https://lottiefiles.com/featured
-                source={require('../assets/lottiefiles/Car_loading.json')}
+                source={file}
             />
+            <Text>No Data Found!</Text>
         </View>
     )
 }
@@ -39,4 +38,4 @@ const styles = StyleSheet.create({
         paddingTop: 20,
     },
 });
-export default LoadingView
+export default LottieFileView

@@ -8,13 +8,17 @@ import { CommonContextProvider } from "../context/CommonContext";
 import { Provider, useDispatch } from "react-redux";
 import { store } from "../redux/store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { setDriverDetails } from "../redux/homeSlice";
+import { setDriverDetails, setUserData } from "../redux/homeSlice";
+import { useIsFocused } from "@react-navigation/native";
+import { StatusBar } from "expo-status-bar";
+import { NavigationProvider, NavigationView, useNavigation } from '@googlemaps/react-native-navigation-sdk'
+
 
 export default function RootLayout() {
   const MainLayout = () => {
     const router = useRouter();
     const dispatch = useDispatch();
-
+    const focus = useIsFocused();
     async function getItem(key) {
       try {
         const response = await AsyncStorage.getItem(key);
@@ -26,11 +30,12 @@ export default function RootLayout() {
     useEffect(() => {
       getItem('userData').then((data) => {
         if (data) {
+          dispatch(setUserData({ details: data }));
           if (data?.token) {
             getDriverDetails(data?.token).then((resData) => {
               if (resData?.status) {
-                dispatch(setDriverDetails({ details: resData }))
-                router.replace('(tabs)')
+                dispatch(setDriverDetails({ details: resData?.details }))
+                router.replace('home')
               }
             })
           }
@@ -41,7 +46,7 @@ export default function RootLayout() {
     }, [])
 
     async function getDriverDetails(token) {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}api/driver_details/profile`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/driver_details/profile`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -53,13 +58,16 @@ export default function RootLayout() {
     return <Slot />
   }
   return (
-    <Provider store={store}>
-      <CommonContextProvider>
-        <SafeAreaView style={styles.container}>
-          <MainLayout />
-        </SafeAreaView>
-      </CommonContextProvider>
-    </Provider>
+    <NavigationProvider termsAndConditionsDialogOptions={{ title: 'Terms', companyName: 'My App' }}>
+      <Provider store={store}>
+        <CommonContextProvider>
+          <SafeAreaView style={styles.container}>
+            <StatusBar style="dark" />
+            <MainLayout />
+          </SafeAreaView>
+        </CommonContextProvider>
+      </Provider>
+    </NavigationProvider >
   );
 }
 

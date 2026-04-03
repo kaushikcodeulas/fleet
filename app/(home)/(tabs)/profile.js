@@ -1,29 +1,69 @@
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
 import { homeValue } from '../../../redux/homeSlice';
 import { useCommonContext } from '../../../context/CommonContext';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 
 export default function ProfileScreen() {
   const driverDetails = useSelector(homeValue)?.details;
-  const {dateFormat} = useCommonContext();
+  const userData = useSelector(homeValue)?.userData;
+  const tripDetails = useSelector(homeValue)?.tripDetails?.data;
+  const { dateFormat } = useCommonContext();
+
+  const [driverProfile, setDriverProfile] = useState({"total_hour": 0, "total_km": 0, "total_trip": 0});
+  const [loading, setLoading] = useState(true);
+
+  async function getDriverProfile() {
+    try {
+      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/driver_details/getDriverProfile`, {
+        id: tripDetails?.trip_id
+      },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userData?.token}`
+          }
+        });
+      return response.data;
+    } catch (error) {
+      return error;
+    }
+  }
+
+  useEffect(() => {
+    setLoading(true)
+    getDriverProfile().then((data) => {
+      // console.log(data)
+      if(data?.status){
+        setDriverProfile(data?.details)
+      }else{
+        Alert.alert(data?.msg)
+      }
+      setLoading(false)
+    }).catch((error) => {
+      setLoading(false)
+    })
+  }, [])
   
+
   function logoutProfile() {
-    AsyncStorage.removeItem('userData')
-    router.replace('signin')
+    AsyncStorage.removeItem('userData');
+    router.replace('signin');
   }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <TouchableOpacity onPress={() => { router.push('/screens/ProfileEdit') }} style={{ position: "absolute", right: 20, top: 30, zIndex: 55, borderColor: "#efefef", borderWidth: 0, borderRadius: 50, paddingHorizontal: 10, paddingVertical: 13 }}>
+      <TouchableOpacity onPress={() => { router.push({ pathname: "/screens/ProfileEdit" }) }} style={{ position: "absolute", right: 20, top: 30, zIndex: 55, borderColor: "#efefef", borderWidth: 0, borderRadius: 50, paddingHorizontal: 10, paddingVertical: 13 }}>
         <FontAwesome5 name="user-edit" size={24} color="#fff" />
       </TouchableOpacity>
       {/* Header / Profile Banner */}
       <View style={styles.header}>
         <Image
-          source={driverDetails?.picture ? { uri: process.env.EXPO_PUBLIC_API_URL + driverDetails?.picture } : require("../../../assets/user.png")}
+          source={driverDetails?.picture ? { uri: process.env.EXPO_PUBLIC_BASE_URL + driverDetails?.picture } : require("../../../assets/user.png")}
           style={styles.avatar}
         />
         <Text style={styles.name}>{driverDetails.first_name} {driverDetails.last_name}</Text>
@@ -41,9 +81,9 @@ export default function ProfileScreen() {
 
       {/* Stats Cards */}
       <View style={styles.statsRow}>
-        <StatCard icon="road" label="Total KM" value="12,450" />
-        <StatCard icon="truck" label="Trips" value="1,240" />
-        <StatCard icon="clock" label="Hours" value="3,560" />
+        <StatCard icon="road" label="Total KM" value={driverProfile?.total_km} loading={loading} />
+        <StatCard icon="truck" label="Trips" value={driverProfile?.total_trip} loading={loading} />
+        <StatCard icon="clock" label="Hours" value={driverProfile?.total_hour} loading={loading} />
       </View>
 
       {/* Profile Details */}
@@ -58,8 +98,8 @@ export default function ProfileScreen() {
 
       {/* Action Buttons */}
       <View style={styles.actions}>
-        <ActionButton icon="cog" label="Settings" />
-        <ActionButton icon="shield-alt" label="Safety" />
+        {/* <ActionButton icon="cog" label="Settings" />
+        <ActionButton icon="shield-alt" label="Safety" /> */}
         <TouchableOpacity onPress={logoutProfile}>
           <ActionButton icon="sign-out-alt" label="Logout" danger />
         </TouchableOpacity>
@@ -70,10 +110,10 @@ export default function ProfileScreen() {
 
 /* Components */
 
-const StatCard = ({ icon, label, value }) => (
+const StatCard = ({ icon, label, value, loading }) => (
   <View style={styles.statCard}>
     <MaterialCommunityIcons name={icon} size={26} color="#3498db" />
-    <Text style={styles.statValue}>{value}</Text>
+    {loading ? <ActivityIndicator size={"small"} /> : <Text style={styles.statValue}>{value}</Text>}
     <Text style={styles.statLabel}>{label}</Text>
   </View>
 );
@@ -114,7 +154,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f4f6f8',
-    marginBottom: 15
+
   },
 
   header: {
@@ -206,7 +246,7 @@ const styles = StyleSheet.create({
   actions: {
     marginTop: 20,
     paddingHorizontal: 16,
-    marginBottom: 30,
+    marginBottom: 50,
   },
   actionButton: {
     backgroundColor: '#fff',

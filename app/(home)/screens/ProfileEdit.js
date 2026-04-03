@@ -14,42 +14,21 @@ import { Stack, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { homeValue } from '../../../redux/homeSlice';
 import { useSelector } from 'react-redux';
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 export default function ProfileEdit() {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(30)).current;
-    const driverDetails = useSelector(homeValue);
+    const driverDetails = useSelector(homeValue)?.details;
 
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [phone, setPhone] = useState('');
-    const [address, setAddress] = useState('');
-    const [profileImage, setProfileImage] = useState(null);
+    const [firstName, setFirstName] = useState(driverDetails?.first_name);
+    const [lastName, setLastName] = useState(driverDetails?.last_name);
+    const [phone, setPhone] = useState(driverDetails?.phone);
+    const [address, setAddress] = useState(driverDetails?.address);
+    const [profileImage, setProfileImage] = useState(driverDetails?.picture);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    async function getItem(key) {
-        try {
-            const response = await AsyncStorage.getItem(key);
-            return JSON.parse(response);
-        } catch (error) {
-            return undefined;
-        }
-    }
-    useEffect(() => {
-        getItem('userData').then((data) => {
-            setLoading(false);
-            if (data) {
-                setFirstName(data?.first_name);
-                setLastName(data?.last_name);
-                setPhone(data?.phone);
-                setAddress(data?.address);
-                setProfileImage(data?.picture);
-            } else {
-                router.replace('signin')
-            }
-        })
-    }, [])
 
     useEffect(() => {
         Animated.parallel([
@@ -101,8 +80,11 @@ export default function ProfileEdit() {
             />
             {/* Profile Picture */}
             <TouchableOpacity style={styles.imageWrapper} onPress={pickImage}>
+                <View style={{position: "absolute", right: 20, bottom: 20}}>
+                    <AntDesign name="camera" size={24} color="black" />
+                </View>
                 {profileImage ? (
-                    <Image source={{ uri: process.env.EXPO_PUBLIC_API_URL+profileImage }} style={styles.avatar} />
+                    <Image source={{ uri: process.env.EXPO_PUBLIC_BASE_URL+profileImage }} style={styles.avatar} />
                 ) : (
                     <Ionicons name="camera" size={28} color="#7f8c8d" />
                 )}
@@ -170,10 +152,8 @@ const styles = StyleSheet.create({
         marginBottom: 24,
         height: 200,
         justifyContent: "center",
-        borderColor: "#c7c7c7",
-        borderWidth: 1,
-        borderRadius: 20,
-        elevation: 5,
+        borderRadius: 10,
+        elevation: 1,
         shadowColor: "#000"
     },
     avatar: {

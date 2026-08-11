@@ -16,7 +16,12 @@
       "config": {
         "googleMapsApiKey": "AIzaSyBGIm2P5Vav9zkOABLCe5QIEjkhyoFpD7g"
       },
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": ["location", "audio", "fetch"],
+        "NSLocationWhenInUseUsageDescription": "Location access is required for real-time turn-by-turn fleet navigation.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Background location access is required to keep turn-by-turn navigation and PiP active when minimized."
+      }
     },
     "android": {
       "edgeToEdgeEnabled": true,
@@ -26,6 +31,13 @@
         }
       },
       "package": "com.naracoo.fleet",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "SYSTEM_ALERT_WINDOW"
+      ],
       "intentFilters": [
         {
           "action": "MAIN",

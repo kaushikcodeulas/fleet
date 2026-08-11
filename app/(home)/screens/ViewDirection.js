@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,13 +6,15 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  NativeModules,
   StatusBar as RNStatusBar
 } from 'react-native';
 import {
   NavigationView,
   useNavigation,
   TravelMode,
-  NavigationNightMode
+  NavigationNightMode,
+  CameraPerspective
 } from '@googlemaps/react-native-navigation-sdk';
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useNavigation as useExpoNavigation, useRouter } from 'expo-router';
@@ -20,8 +22,9 @@ import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Entypo from '@expo/vector-icons/Entypo';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import Feather from '@expo/vector-icons/Feather';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { StatusBar } from 'expo-status-bar';
+import { useCommonContext } from '../../../context/CommonContext';
 
 const geocodeAddress = async (addressString) => {
   if (!addressString) return null;
@@ -41,17 +44,51 @@ const geocodeAddress = async (addressString) => {
 
 const ViewDirection = () => {
   const { navigationController, isInitialized } = useNavigation();
+  const viewControllerRef = useRef(null);
+
+  // Global Context for PiP & Navigation State
+  const {
+    startNavigationGlobal,
+    stopNavigationGlobal,
+    enterPipMode,
+    isNavigating,
+    exitPipMode
+  } = useCommonContext();
+
   const [isReady, setIsReady] = useState(false);
   const [destinationsSet, setDestinationsSet] = useState(false);
   const [status, setStatus] = useState('Waiting for map initialization...');
   const { cordsData, tripData } = useLocalSearchParams();
-  const [startNavigation, setStartNavigation] = useState(false);
+
+  // Safely parse trip data
+  const parsedTrip = tripData
+    ? (typeof tripData === 'string' ? JSON.parse(tripData) : tripData)
+    : null;
+
+  // Check if trip is already in started status (status 2 = Started)
+  const isTripAlreadyStarted =
+    String(parsedTrip?.status) === '2' ||
+    String(parsedTrip?.trip_status) === '2';
+
+  const [startNavigation, setStartNavigation] = useState(Boolean(isNavigating) || isTripAlreadyStarted);
+
+  // Computed state for active turn-by-turn navigation
+  const isTurnByTurnActive = startNavigation || Boolean(isNavigating) || isTripAlreadyStarted;
 
   // Theme & Traffic state
   const [isNightMode, setIsNightMode] = useState(true); // Default dark theme
   const [showsTraffic, setShowsTraffic] = useState(true); // Default traffic enabled
 
   const route = useRouter();
+
+  useEffect(() => {
+    // If returning from PiP mode or opening an active trip, keep guidance active
+    exitPipMode();
+    if (isNavigating || isTripAlreadyStarted) {
+      setStartNavigation(true);
+      setStatus('Navigation Active 🟢');
+    }
+  }, [isNavigating, isTripAlreadyStarted]);
 
   const requestLocationPermission = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -105,8 +142,7 @@ const ViewDirection = () => {
         }
 
         if (!rawCords || !Array.isArray(rawCords) || rawCords.length < 2) {
-          if (tripData) {
-            const parsedTrip = typeof tripData === 'string' ? JSON.parse(tripData) : tripData;
+          if (parsedTrip) {
             const isShipment = parsedTrip?.trip_category === 'shipment_order';
 
             const originAddr = isShipment
@@ -167,7 +203,18 @@ const ViewDirection = () => {
         });
 
         setDestinationsSet(true);
-        setStatus('Route Ready • Tap Start Guidance ✅');
+
+        if (isTurnByTurnActive) {
+          setStatus('Navigation Active 🟢');
+          try {
+            await navigationController.startGuidance();
+            startNavigationGlobal(navigationController, { cordsData, tripData });
+          } catch (e) {
+            console.log('Auto guidance start on setup:', e);
+          }
+        } else {
+          setStatus('Route Ready • Tap Start Guidance ✅');
+        }
       } catch (error) {
         console.error('Failed to set destinations:', error);
         setStatus('Set destination failed: ' + (error?.message || error));
@@ -191,8 +238,9 @@ const ViewDirection = () => {
 
     try {
       await navigationController.startGuidance();
-      setStatus('Navigation Active 🟢');
+      startNavigationGlobal(navigationController, { cordsData, tripData });
       setStartNavigation(true);
+      setStatus('Navigation Active 🟢');
     } catch (error) {
       setStatus('Navigation failed: ' + (error?.message || error));
       Alert.alert("Navigation Error", error?.message || "Failed to start guidance.");
@@ -202,13 +250,53 @@ const ViewDirection = () => {
 
   const stopNavigation = async () => {
     try {
-      if (navigationController) {
-        await navigationController.stopGuidance();
-      }
-      setStatus('Navigation Standby');
+      await stopNavigationGlobal();
       setStartNavigation(false);
+      setStatus('Navigation Standby');
     } catch (error) {
       console.error('Stop failed:', error);
+    }
+  };
+
+  const handleMinimizeToPip = async () => {
+    // Ensure active guidance state is synced
+    if (!isNavigating && !startNavigation) {
+      if (destinationsSet && navigationController) {
+        try {
+          await navigationController.startGuidance();
+          startNavigationGlobal(navigationController, { cordsData, tripData });
+          setStartNavigation(true);
+        } catch (e) {
+          console.log('Error starting guidance for PiP:', e);
+        }
+      }
+    } else {
+      setStartNavigation(true);
+      if (navigationController) {
+        startNavigationGlobal(navigationController, { cordsData, tripData });
+      }
+    }
+
+    enterPipMode();
+
+    if (Platform.OS === 'android' && NativeModules.PipModule && NativeModules.PipModule.enterPip) {
+      try {
+        await NativeModules.PipModule.enterPip();
+      } catch (e) {
+        console.log('System PiP error:', e);
+      }
+    }
+  };
+
+  const handleRecenterLocation = async () => {
+    try {
+      if (viewControllerRef.current) {
+        await viewControllerRef.current.setFollowingPerspective(CameraPerspective.TILTED);
+      } else if (navigationController) {
+        await navigationController.showRouteOverview();
+      }
+    } catch (err) {
+      console.log('Recenter error:', err);
     }
   };
 
@@ -226,17 +314,20 @@ const ViewDirection = () => {
     let isBack = false;
     const unsubscribe = expoNavigation.addListener('beforeRemove', (e) => {
       if (isBack) return;
-      e.preventDefault();
-      isBack = true;
-      stopNavigation();
-      route.back();
+      if (isTurnByTurnActive) {
+        e.preventDefault();
+        isBack = true;
+        handleMinimizeToPip();
+        route.back();
+      } else {
+        stopNavigation();
+      }
     });
 
     return () => {
       unsubscribe();
-      stopNavigation();
     };
-  }, [expoNavigation]);
+  }, [expoNavigation, isTurnByTurnActive]);
 
   return (
     <View style={styles.container}>
@@ -246,11 +337,33 @@ const ViewDirection = () => {
       <View style={styles.topHeaderOverlay} pointerEvents="box-none">
         <TouchableOpacity style={styles.exitBtn} onPress={() => route.back()} activeOpacity={0.85}>
           <Ionicons name="arrow-back" size={18} color="#ffffff" />
-          <Text style={styles.exitBtnText}>Exit</Text>
+          <Text style={styles.exitBtnText}>Back</Text>
         </TouchableOpacity>
 
-        {/* Controls Bar: Theme & Traffic */}
+        {/* Controls Bar: Recenter, PiP, Theme & Traffic */}
         <View style={styles.topRightControls}>
+          {/* Dedicated Recenter Button */}
+          <TouchableOpacity
+            style={[styles.toolIconBtn, styles.recenterBtn]}
+            onPress={handleRecenterLocation}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="my-location" size={16} color="#ffffff" />
+            <Text style={styles.toolIconText}>Recenter</Text>
+          </TouchableOpacity>
+
+          {/* PiP Minimize Button */}
+          {isTurnByTurnActive && (
+            <TouchableOpacity
+              style={[styles.toolIconBtn, styles.pipBtnActive]}
+              onPress={handleMinimizeToPip}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons name="picture-in-picture-alt" size={16} color="#ffffff" />
+              <Text style={styles.toolIconText}>PiP</Text>
+            </TouchableOpacity>
+          )}
+
           {/* Traffic Toggle Button */}
           <TouchableOpacity
             style={[styles.toolIconBtn, showsTraffic && styles.toolIconActive]}
@@ -259,7 +372,7 @@ const ViewDirection = () => {
           >
             <MaterialCommunityIcons
               name="traffic-light"
-              size={18}
+              size={16}
               color={showsTraffic ? '#ffffff' : '#94a3b8'}
             />
             <Text style={[styles.toolIconText, showsTraffic && { color: '#ffffff' }]}>
@@ -275,7 +388,7 @@ const ViewDirection = () => {
           >
             <Ionicons
               name={isNightMode ? 'moon' : 'sunny'}
-              size={16}
+              size={15}
               color="#ffffff"
             />
             <Text style={styles.toolIconText}>
@@ -289,6 +402,9 @@ const ViewDirection = () => {
       <NavigationView
         style={styles.map}
         onMapReady={onMapReady}
+        onNavigationViewControllerCreated={(controller) => {
+          viewControllerRef.current = controller;
+        }}
         navigationNightMode={isNightMode ? NavigationNightMode.FORCE_NIGHT : NavigationNightMode.FORCE_DAY}
         trafficEnabled={showsTraffic}
         trafficPromptsEnabled={true}
@@ -313,22 +429,35 @@ const ViewDirection = () => {
         <View style={styles.controlsCard}>
           {/* Status Indicator Bar */}
           <View style={styles.statusRow}>
-            <View style={[styles.statusDot, startNavigation ? styles.statusDotActive : styles.statusDotStandby]} />
+            <View style={[styles.statusDot, isTurnByTurnActive ? styles.statusDotActive : styles.statusDotStandby]} />
             <Text style={styles.statusText} numberOfLines={1}>
               {status}
             </Text>
           </View>
 
-          {/* Action Button */}
-          {startNavigation ? (
-            <TouchableOpacity
-              style={styles.stopBtn}
-              onPress={stopNavigation}
-              activeOpacity={0.85}
-            >
-              <Entypo name="cross" size={22} color="#ffffff" />
-              <Text style={styles.btnText}>End Navigation</Text>
-            </TouchableOpacity>
+          {/* Action Buttons */}
+          {isTurnByTurnActive ? (
+            <View style={styles.actionBtnRow}>
+              {/* PiP Floating Overlay Button */}
+              <TouchableOpacity
+                style={styles.pipActionBtn}
+                onPress={handleMinimizeToPip}
+                activeOpacity={0.85}
+              >
+                <MaterialIcons name="picture-in-picture-alt" size={18} color="#ffffff" />
+                <Text style={styles.actionBtnLabel}>PiP Mode</Text>
+              </TouchableOpacity>
+
+              {/* Stop Turn-By-Turn Navigation Button */}
+              <TouchableOpacity
+                style={styles.stopBtn}
+                onPress={stopNavigation}
+                activeOpacity={0.85}
+              >
+                <Entypo name="cross" size={18} color="#ffffff" />
+                <Text style={styles.btnText}>Stop Navigation</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <TouchableOpacity
               style={[styles.startBtn, !destinationsSet && styles.btnDisabled]}
@@ -366,18 +495,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    zIndex: 20,
+    zIndex: 30,
   },
   exitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.85)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    backgroundColor: 'rgba(15, 23, 42, 0.88)',
+    paddingHorizontal: 13,
+    paddingVertical: 7,
     borderRadius: 20,
-    gap: 6,
+    gap: 5,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: 'rgba(255, 255, 255, 0.18)',
     elevation: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -392,23 +521,31 @@ const styles = StyleSheet.create({
   topRightControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   toolIconBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.85)',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    gap: 6,
+    backgroundColor: 'rgba(15, 23, 42, 0.88)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 18,
+    gap: 5,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: 'rgba(255, 255, 255, 0.18)',
     elevation: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 5,
+  },
+  recenterBtn: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#60a5fa',
+  },
+  pipBtnActive: {
+    backgroundColor: '#6366f1',
+    borderColor: '#818cf8',
   },
   toolIconActive: {
     backgroundColor: '#10b981',
@@ -419,9 +556,9 @@ const styles = StyleSheet.create({
     borderColor: '#6366f1',
   },
   toolIconText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#cbd5e1',
+    color: '#ffffff',
   },
 
   bottomSheetContainer: {
@@ -431,7 +568,7 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 16,
     paddingBottom: Platform.OS === 'ios' ? 30 : 20,
-    zIndex: 20,
+    zIndex: 30,
   },
   controlsCard: {
     backgroundColor: 'rgba(15, 23, 42, 0.92)',
@@ -469,7 +606,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#e2e8f0',
   },
-
+  actionBtnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  pipActionBtn: {
+    flex: 0.38,
+    backgroundColor: '#3b82f6',
+    paddingVertical: 13,
+    borderRadius: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    elevation: 5,
+  },
+  actionBtnLabel: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
   startBtn: {
     backgroundColor: '#4f46e5',
     paddingVertical: 15,
@@ -485,13 +642,14 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   stopBtn: {
+    flex: 0.62,
     backgroundColor: '#ef4444',
-    paddingVertical: 15,
+    paddingVertical: 13,
     borderRadius: 16,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
+    gap: 6,
     elevation: 5,
     shadowColor: '#ef4444',
     shadowOffset: { width: 0, height: 3 },
@@ -504,9 +662,9 @@ const styles = StyleSheet.create({
   },
   btnText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
 });
 

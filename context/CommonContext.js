@@ -1,66 +1,117 @@
-import React, { useContext } from "react";
+import React, { useContext, useState, useRef, useEffect } from "react";
+import { AppState } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CommonContext = React.createContext();
 
 export const CommonContextProvider = ({ children }) => {
+  // Navigation & PiP State
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [isPipMode, setIsPipMode] = useState(false);
+  const [navParams, setNavParams] = useState(null);
 
-    function dateFormat(inputDate) {
-        // 1. Create a Date object (replacing space with T for standard ISO parsing)
-        const dateObj = new Date(inputDate.replace(" ", "T"));
+  const activeNavController = useRef(null);
+  const isNavigatingRef = useRef(false);
 
-        // 2. Format using Intl.DateTimeFormat
-        const formatter = new Intl.DateTimeFormat('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
+  useEffect(() => {
+    isNavigatingRef.current = isNavigating;
+  }, [isNavigating]);
 
-        // 3. Format and clean up (replacing comma between month and year if necessary)
-        // "12 Feb 2026, 10:42" -> "12 Feb, 2026 10:42 AM"
-        let formattedDate = formatter.format(dateObj).replace(",", "");
-        // Re-format to match "12 Feb, 2026 10:42 AM" exactly
-        const parts = formattedDate.split(' ');
-        const finalDate = `${parts[0]} ${parts[1]}, ${parts[2]} ${parts[3]} AM`;
-        // Note: Intl adds comma differently based on locale, adjust formatting accordingly.
-        // Better, cleaner approach using manual formatting for specific output:
-
-        const day = dateObj.getDate();
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const month = months[dateObj.getMonth()];
-        const year = dateObj.getFullYear();
-        const hour = dateObj.getHours() % 12 || 12;
-        const minutes = dateObj.getMinutes().toString().padStart(2, '0');
-        const ampm = dateObj.getHours() >= 12 ? 'PM' : 'AM';
-
-        const result = `${day} ${month}, ${year} ${hour}:${minutes} ${ampm}`;
-        return result; // "12 Feb, 2026 10:42 AM"
-
-    }
-    async function getItem(key) {
-        try {
-            const response = await AsyncStorage.getItem(key);
-            return JSON.parse(response);
-        } catch (error) {
-            return undefined;
+  // Auto-enable PiP mode when application goes to background or is minimized while turn-by-turn navigation is active
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        if (isNavigatingRef.current) {
+          setIsPipMode(true);
         }
-    } 
-    return (<CommonContext.Provider
-        value={{
-            dateFormat,
-            getItem
-        }}
-    >
-        {children}
-    </CommonContext.Provider>)
-}
+      }
+    });
 
-export const useCommonContext = (() => {
-    const value = useContext(CommonContext);
-    if (!value) {
-        throw new Error("useCommonContext must be wrapped inside a CommonContextProvider")
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  function dateFormat(inputDate) {
+    if (!inputDate) return 'N/A';
+    const dateObj = new Date(inputDate.replace(" ", "T"));
+
+    const day = dateObj.getDate();
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = months[dateObj.getMonth()];
+    const year = dateObj.getFullYear();
+    const hour = dateObj.getHours() % 12 || 12;
+    const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+    const ampm = dateObj.getHours() >= 12 ? 'PM' : 'AM';
+
+    return `${day} ${month}, ${year} ${hour}:${minutes} ${ampm}`;
+  }
+
+  async function getItem(key) {
+    try {
+      const response = await AsyncStorage.getItem(key);
+      return JSON.parse(response);
+    } catch (error) {
+      return undefined;
     }
-    return value;
-})
+  }
+
+  const startNavigationGlobal = (controller, params) => {
+    activeNavController.current = controller;
+    setNavParams(params);
+    isNavigatingRef.current = true;
+    setIsNavigating(true);
+  };
+
+  const stopNavigationGlobal = async () => {
+    try {
+      if (activeNavController.current) {
+        await activeNavController.current.stopGuidance();
+      }
+    } catch (e) {
+      console.log("Error stopping guidance globally:", e);
+    }
+    activeNavController.current = null;
+    isNavigatingRef.current = false;
+    setIsNavigating(false);
+    setIsPipMode(false);
+    setNavParams(null);
+  };
+
+  const enterPipMode = () => {
+    setIsPipMode(true);
+  };
+
+  const exitPipMode = () => {
+    setIsPipMode(false);
+  };
+
+  return (
+    <CommonContext.Provider
+      value={{
+        dateFormat,
+        getItem,
+        isNavigating,
+        isPipMode,
+        navParams,
+        activeNavController,
+        startNavigationGlobal,
+        stopNavigationGlobal,
+        enterPipMode,
+        exitPipMode,
+        setIsNavigating,
+        setIsPipMode,
+      }}
+    >
+      {children}
+    </CommonContext.Provider>
+  );
+};
+
+export const useCommonContext = () => {
+  const value = useContext(CommonContext);
+  if (!value) {
+    throw new Error("useCommonContext must be wrapped inside a CommonContextProvider");
+  }
+  return value;
+};

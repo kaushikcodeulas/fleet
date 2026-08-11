@@ -12,7 +12,7 @@ import { setDriverDetails, setUserData } from "../redux/homeSlice";
 import { useIsFocused } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { NavigationProvider, NavigationView, useNavigation } from '@googlemaps/react-native-navigation-sdk'
-
+import PipMiniMapOverlay from "../component/common/PipMiniMapOverlay";
 
 export default function RootLayout() {
   const MainLayout = () => {
@@ -64,6 +64,7 @@ export default function RootLayout() {
           <SafeAreaView style={styles.container}>
             <StatusBar style="dark" />
             <MainLayout />
+            <PipMiniMapOverlay />
           </SafeAreaView>
         </CommonContextProvider>
       </Provider>

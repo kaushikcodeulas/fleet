@@ -1,12 +1,18 @@
 // homeSlice.js
 import { createSlice } from '@reduxjs/toolkit';
-import { getAllTrips, getFleetDetails, getTripDetails } from './homeThunks';
+import { getAllTrips, getFleetDetails, getTripDetails, getDashboardSummary, getBookedTrips } from './homeThunks';
 
 export const homeSlice = createSlice({
   name: 'home',
   initialState: {
     userData: null,
     details: null,
+    dashboardSummary: {
+      loading: true,
+      status: 'loading',
+      data: null,
+      error: null
+    },
     fleetDetails: {
       loading: true,
       status: 'loading',
@@ -23,20 +29,40 @@ export const homeSlice = createSlice({
       loading: true,
       data: [],
       error: null
+    },
+    bookedTrips: {
+      loading: true,
+      data: [],
+      error: null
     }
   },
   reducers: {
     setDriverDetails: (state, action) => {
       state.details = action?.payload?.details;
-    //   console.log(state)
     },
     setUserData: (state, action) => {
       state.userData = action?.payload?.details;
-    //   console.log(state)
     }
   },
   extraReducers: (builder) => {
     builder
+      // Dashboard Summary
+      .addCase(getDashboardSummary.pending, (state) => {
+        state.dashboardSummary.status = "loading";
+        state.dashboardSummary.loading = true;
+      })
+      .addCase(getDashboardSummary.fulfilled, (state, action) => {
+        state.dashboardSummary.status = "succeeded";
+        state.dashboardSummary.data = action.payload;
+        state.dashboardSummary.loading = false;
+      })
+      .addCase(getDashboardSummary.rejected, (state, action) => {
+        state.dashboardSummary.status = "failed";
+        state.dashboardSummary.error = action.error?.message;
+        state.dashboardSummary.loading = false;
+      })
+
+      // Fleet Details
       .addCase(getFleetDetails.pending, (state) => {
         state.fleetDetails.status = "loading";
         state.fleetDetails.loading = true;
@@ -48,7 +74,7 @@ export const homeSlice = createSlice({
       })
       .addCase(getFleetDetails.rejected, (state, action) => {
         state.fleetDetails.status = "failed";
-        state.fleetDetails.error = action.error.message;
+        state.fleetDetails.error = action.error?.message;
         state.fleetDetails.loading = false;
       })
 
@@ -59,12 +85,14 @@ export const homeSlice = createSlice({
       })
       .addCase(getTripDetails.fulfilled, (state, action) => {
         state.tripDetails.status = "succeeded";
+        console.log( action.payload?.details);
+        
         state.tripDetails.data = action.payload?.details;
         state.tripDetails.loading = false;
       })
       .addCase(getTripDetails.rejected, (state, action) => {
         state.tripDetails.status = "failed";
-        state.tripDetails.error = action.error.message;
+        state.tripDetails.error = action.error?.message;
         state.tripDetails.loading = false;
       })
 
@@ -73,13 +101,25 @@ export const homeSlice = createSlice({
         state.allTrips.loading = true;
       })
       .addCase(getAllTrips.fulfilled, (state, action) => {
-        // console.log(action.payload)
         state.allTrips.data = action.payload?.trips;
         state.allTrips.loading = false;
       })
       .addCase(getAllTrips.rejected, (state, action) => {
-        state.allTrips.error = action.error.message;
+        state.allTrips.error = action.error?.message;
         state.allTrips.loading = false;
+      })
+
+      // Booked Trips
+      .addCase(getBookedTrips.pending, (state) => {
+        state.bookedTrips.loading = true;
+      })
+      .addCase(getBookedTrips.fulfilled, (state, action) => {
+        state.bookedTrips.data = action.payload?.trips;
+        state.bookedTrips.loading = false;
+      })
+      .addCase(getBookedTrips.rejected, (state, action) => {
+        state.bookedTrips.error = action.error?.message;
+        state.bookedTrips.loading = false;
       });
   },
 

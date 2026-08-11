@@ -18,6 +18,7 @@ const HomeLayout = () => {
             <Stack.Screen name="screens/AddReport" options={{ title: '', headerShown: true, headerTitle: "" }} />
             <Stack.Screen name="screens/ViewMap" options={{ title: '', headerShown: false, headerTitle: "" }} />
             <Stack.Screen name="screens/ViewDirection" options={{ title: '', headerShown: false, headerTitle: "" }} />
+            <Stack.Screen name="screens/BookedTrips" options={{ title: '', headerShown: true, headerTitle: "Assigned Booked Trips" }} />
         </Stack>
     )
 }

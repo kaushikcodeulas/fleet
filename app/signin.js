@@ -33,6 +33,7 @@ export default function index() {
                 password: userCredentials?.password
             })
         })
+        
         return response.json()
     }
 
@@ -68,7 +69,7 @@ export default function index() {
             try {
                 handleSignin().then((res) => {
                     setLoading(false)
-                    console.log(res.userData)
+                    console.log(res?.status)
                     if (res.status) {
                         dispatch(setDriverDetails({details: res?.userData}));
                         dispatch(setUserData({details: res?.userData}));
@@ -87,11 +88,14 @@ export default function index() {
                         return false;
                     }
                 }).catch((err) => {
+                    console.log(err);
                     setLoading(false)
                     Alert.alert('Login', err.message)
                 })
 
             } catch (error) {
+                console.log(error);
+                
                 setLoading(false)
                 Alert.alert('Error', error.message)
             }

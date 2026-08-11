@@ -4,9 +4,9 @@ import { FontAwesome5 } from '@expo/vector-icons'
 
 const ActionCardStops = ({ icon, label, value, color, uniqueKey }) => {
     return (
-        <TouchableOpacity key={uniqueKey} style={[styles.actionCard, { width: "95%", alignItems: "center", flexDirection: "row", justifyContent: "flex-start", gap: 10 }]}>
+        <TouchableOpacity key={uniqueKey} style={[styles.actionCard, { width: "90%", alignItems: "center", flexDirection: "row", justifyContent: "flex-start", gap: 10 }]}>
             <FontAwesome5 name={icon} size={30} color={color} />
-            <View>
+            <View style={{width: "90%"}}>
                 <Text style={styles.actionValue}>{value}</Text>
                 <Text style={styles.actionLabel}>{label}</Text>
             </View>
@@ -78,6 +78,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 8,
     color: '#2c3e50',
+    flexShrink: 1,
+    textAlign: "justify",
+    width: "auto"
   },
   actionLabel: {
     fontSize: 12,

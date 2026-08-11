@@ -25,7 +25,15 @@
           "apiKey": "AIzaSyBGIm2P5Vav9zkOABLCe5QIEjkhyoFpD7g"
         }
       },
-      "package": "com.naracoo.fleet"
+      "package": "com.naracoo.fleet",
+      "intentFilters": [
+        {
+          "action": "MAIN",
+          "category": [
+            "LAUNCHER"
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -43,11 +51,14 @@
       [
         "expo-build-properties",
         {
-          "android": { 
+          "android": {
             "enableCoreLibraryDesugaring": true,
-            "kotlinVersion": "2.1.21"
+            "kotlinVersion": "2.1.21",
+            "minSdkVersion": 24
           },
-          "ios": { "deploymentTarget": "16.0" }
+          "ios": {
+            "deploymentTarget": "16.0"
+          }
         }
       ],
       "./plugins/withDesugaring"

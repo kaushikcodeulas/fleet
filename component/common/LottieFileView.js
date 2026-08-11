@@ -1,41 +1,59 @@
-import { useRef, useEffect } from 'react';
-import { Button, StyleSheet, View, Text } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { StyleSheet, View, Text } from 'react-native';
 import LottieView from 'lottie-react-native';
-import { useRouter } from 'expo-router';
 
+const LottieFileView = ({
+  file,
+  title = 'No Trip Assigned',
+  message = 'You currently have no active trip assigned from Naracoo Fleet.',
+  width = 240,
+  height = 180,
+  containerStyle
+}) => {
+  const animation = useRef(null);
 
-const LottieFileView = ({file}) => {
-     const animation = useRef(null);
-        useEffect(() => {
-            // You can control the ref programmatically, rather than using autoPlay
-            animation.current?.play();
-        }, []);
-    return (
-        <View style={styles.animationContainer}>
-            <LottieView
-                autoPlay
-                ref={animation}
-                style={{
-                    width: 500,
-                    height: 300,
-                    backgroundColor: '#fff',
-                }}
-                // Find more Lottie files at https://lottiefiles.com/featured
-                source={file}
-            />
-            <Text>No Data Found!</Text>
-        </View>
-    )
-}
+  useEffect(() => {
+    animation.current?.play();
+  }, []);
+
+  return (
+    <View style={[styles.animationContainer, containerStyle]}>
+      <LottieView
+        autoPlay
+        loop
+        ref={animation}
+        style={{ width, height }}
+        source={file || require('../../assets/lottiefiles/nodata.json')}
+      />
+      {title ? <Text style={styles.titleText}>{title}</Text> : null}
+      {message ? <Text style={styles.messageText}>{message}</Text> : null}
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
-    animationContainer: {
-        backgroundColor: '#fff',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flex: 1,
-    },
-    buttonContainer: {
-        paddingTop: 20,
-    },
+  animationContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+  },
+  titleText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  messageText: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 4,
+    textAlign: 'center',
+    lineHeight: 18,
+    maxWidth: 280,
+  },
 });
-export default LottieFileView
+
+export default LottieFileView;

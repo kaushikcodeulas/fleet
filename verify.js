@@ -60,11 +60,13 @@ try {
   const appGradle = fs.readFileSync('android/app/build.gradle', 'utf8');
   const hasAppCompileOpt = appGradle.includes('coreLibraryDesugaringEnabled true');
   const hasAppDep = appGradle.includes('desugar_jdk_libs');
+  const hasMapsExclusion = appGradle.includes("play-services-maps");
   console.log(`[5] android/app/build.gradle desugaring enabled: ${hasAppCompileOpt ? '✅ PASS' : '❌ FAIL'}`);
   console.log(`[6] android/app/build.gradle desugar lib present: ${hasAppDep ? '✅ PASS' : '❌ FAIL'}`);
-  if (!hasAppCompileOpt || !hasAppDep) allPassed = false;
+  console.log(`[7] play-services-maps duplicate excluded:       ${hasMapsExclusion ? '✅ PASS' : '❌ FAIL'}`);
+  if (!hasAppCompileOpt || !hasAppDep || !hasMapsExclusion) allPassed = false;
 } catch (e) {
-  console.log(`[5/6] android/app/build.gradle check error:      ❌ FAIL (${e.message})`);
+  console.log(`[5/6/7] android/app/build.gradle check error:    ❌ FAIL (${e.message})`);
   allPassed = false;
 }
 

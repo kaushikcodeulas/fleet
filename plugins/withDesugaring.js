@@ -43,15 +43,31 @@ function addDesugarDependency(gradle) {
   return gradle;
 }
 
+function excludePlayServicesMaps(gradle) {
+  if (gradle.includes("play-services-maps")) {
+    return gradle;
+  }
+
+  const exclusionBlock = `
+configurations.all {
+    exclude group: 'com.google.android.gms', module: 'play-services-maps'
+}
+`;
+
+  return gradle + '\n' + exclusionBlock;
+}
+
 module.exports = function withDesugaring(config) {
   return withAppBuildGradle(config, (modConfig) => {
     let gradle = modConfig.modResults.contents;
     gradle = setCompileOptionsDesugaring(gradle);
     gradle = addDesugarDependency(gradle);
+    gradle = excludePlayServicesMaps(gradle);
     modConfig.modResults.contents = gradle;
     return modConfig;
   });
 };
 module.exports.setCompileOptionsDesugaring = setCompileOptionsDesugaring;
 module.exports.addDesugarDependency = addDesugarDependency;
+module.exports.excludePlayServicesMaps = excludePlayServicesMaps;
 

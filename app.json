@@ -1,13 +1,13 @@
 {
   "expo": {
     "name": "fleet",
-    "scheme": "fleet",
     "slug": "fleet",
+    "scheme": "fleet",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain"
@@ -18,7 +18,12 @@
       },
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["location", "audio", "fetch"],
+        "UIBackgroundModes": [
+          "location",
+          "audio",
+          "fetch",
+          "picture-in-picture"
+        ],
         "NSLocationWhenInUseUsageDescription": "Location access is required for real-time turn-by-turn fleet navigation.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Background location access is required to keep turn-by-turn navigation and PiP active when minimized."
       }
@@ -37,14 +42,6 @@
         "ACCESS_BACKGROUND_LOCATION",
         "FOREGROUND_SERVICE",
         "SYSTEM_ALERT_WINDOW"
-      ],
-      "intentFilters": [
-        {
-          "action": "MAIN",
-          "category": [
-            "LAUNCHER"
-          ]
-        }
       ]
     },
     "web": {
@@ -54,18 +51,15 @@
     "plugins": [
       "expo-router",
       [
-        "react-native-maps",
-        {
-          "androidGoogleMapsApiKey": "AIzaSyBGIm2P5Vav9zkOABLCe5QIEjkhyoFpD7g",
-          "iosGoogleMapsApiKey": "AIzaSyBGIm2P5Vav9zkOABLCe5QIEjkhyoFpD7g"
-        }
+        "expo-pip",
+        {}
       ],
       [
         "expo-build-properties",
         {
           "android": {
-            "enableCoreLibraryDesugaring": true,
-            "kotlinVersion": "2.1.21",
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
             "minSdkVersion": 24
           },
           "ios": {
@@ -76,7 +70,6 @@
       "./plugins/withDesugaring"
     ],
     "extra": {
-      "router": {},
       "eas": {
         "projectId": "04e208fe-8acc-4255-8de6-5b4cbce845b6"
       }

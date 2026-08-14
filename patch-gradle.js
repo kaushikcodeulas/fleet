@@ -29,23 +29,22 @@ const gradlePath = path.join(__dirname, 'android/app/build.gradle');
 let gradle = fs.readFileSync(gradlePath, 'utf8');
 
 if (!gradle.includes('coreLibraryDesugaringEnabled')) {
-  gradle = gradle
-    .replace(
-      'sourceCompatibility JavaVersion.VERSION_1_8',
-      'coreLibraryDesugaringEnabled true\n        sourceCompatibility JavaVersion.VERSION_1_8'
-    )
-    .replace(
-      'sourceCompatibility = JavaVersion.VERSION_1_8',
-      'coreLibraryDesugaringEnabled true\n        sourceCompatibility = JavaVersion.VERSION_1_8'
-    )
-    .replace(
-      'sourceCompatibility JavaVersion.VERSION_11',
-      'coreLibraryDesugaringEnabled true\n        sourceCompatibility JavaVersion.VERSION_11'
-    )
-    .replace(
-      'sourceCompatibility JavaVersion.VERSION_17',
-      'coreLibraryDesugaringEnabled true\n        sourceCompatibility JavaVersion.VERSION_17'
+  if (gradle.includes('compileOptions {')) {
+    gradle = gradle.replace(
+      'compileOptions {',
+      'compileOptions {\n        coreLibraryDesugaringEnabled true'
     );
+  } else {
+    gradle = gradle.replace(
+      'compileSdk rootProject.ext.compileSdkVersion',
+      `compileSdk rootProject.ext.compileSdkVersion
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }`
+    );
+  }
   console.log('coreLibraryDesugaringEnabled injected ✅');
 } else {
   console.log('coreLibraryDesugaringEnabled already present ✅');

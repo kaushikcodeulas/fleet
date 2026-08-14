@@ -279,9 +279,15 @@ const ViewDirection = () => {
 
     enterPipMode();
 
-    if (Platform.OS === 'android' && NativeModules.PipModule && NativeModules.PipModule.enterPip) {
+    if (Platform.OS === 'android') {
       try {
-        await NativeModules.PipModule.enterPip();
+        const { enterPip, isPipSupported } = require('expo-pip');
+        const supported = await isPipSupported?.();
+        if (supported !== false && typeof enterPip === 'function') {
+          await enterPip();
+        } else if (NativeModules.PipModule && NativeModules.PipModule.enterPip) {
+          await NativeModules.PipModule.enterPip();
+        }
       } catch (e) {
         console.log('System PiP error:', e);
       }
